@@ -1,14 +1,17 @@
 # -*- coding: utf-8 -*-
 import re
 from ko_pron import romanise
+import copy
 
 class Rhyme:
+    rhyme = ""
     start_index = 0
     end_index = 0
 
-    def __init__(self, start_index, end_index):
-        self.start_index = start_index
-        self.end_index = end_index
+    def __init__(self, rhyme, start_index, end_index):
+      self.rhyme = rhyme
+      self.start_index = start_index
+      self.end_index = end_index
 
 def isHangul(text):
     hanCount = len(re.findall(u'[\u3130-\u318F\uAC00-\uD7A3]+', text))
@@ -64,6 +67,7 @@ The one and only VJ, and now I'm back again
 물론 이번에도 변화의 핵, again"""
 
 pron_list = []
+rhyme_list = []
 
 for text in lyrics:
     pron = ""
@@ -78,11 +82,75 @@ for text in lyrics:
 pron_list_len = len(pron_list)
 search_limit = 25
 
-for i in range(pron_list_len):
+for i in range(pron_list_len - 1):
+    now_pron = pron_list[i]
+
+    if now_pron == None:
+        continue
+
     now_search_limit = i + search_limit
 
     if now_search_limit > (pron_list_len - 1): #검색 limit 값이 리스트 끝을 넘어간다면
         now_search_limit = (pron_list_len - 1)
 
     for j in range(i + 1, now_search_limit + 1): #검색 중...
-        if pron_list[i]
+        other_pron = pron_list[j]
+
+        if other_pron == None:
+            continue
+        
+        sword_pron = now_pron
+        shield_pron = other_pron
+        if len(now_pron) > len(other_pron):
+            sword_pron = other_pron
+            shield_pron = now_pron
+    
+        rhyme = None
+
+        for k in range(len(sword_pron), -1, -1):
+            for g in range(k):
+                slice_pron = sword_pron[g : g + (len(sword_pron) - k + 1)]
+                if slice_pron in shield_pron:
+                    rhyme = slice_pron
+
+        if rhyme != None:
+            rhyme_list.append(
+              Rhyme(
+                  rhyme,
+                  i,
+                  j
+              )
+            )
+        
+        break
+
+temp_rhyme_list = copy.deepcopy(rhyme_list)
+rhyme_lyrics = copy.copy(lyrics)
+only_rhyme_list = [None for i in range(len(lyrics))]
+
+for i in range(len(temp_rhyme_list) - 1):
+    if temp_rhyme_list[i] == None:
+        continue
+    elif len(temp_rhyme_list[i].rhyme) < 2:
+        temp_rhyme_list[i] = None
+        continue
+
+    same_rhyme_index_list = [temp_rhyme_list[i].start_index, temp_rhyme_list[i].end_index]
+    for j in range(i+1, len(temp_rhyme_list)):
+        if temp_rhyme_list[j] == None:
+            continue
+
+        if temp_rhyme_list[i].rhyme == temp_rhyme_list[j].rhyme:
+            same_rhyme_index_list.append(temp_rhyme_list[j].start_index)
+            same_rhyme_index_list.append(temp_rhyme_list[j].end_index)
+
+            temp_rhyme_list[j] = None
+    
+    temp_rhyme_list[i] = None
+
+    print(same_rhyme_index_list)
+
+    for index in same_rhyme_index_list:
+        rhyme_lyrics = rhyme_lyrics[ : index] + "$" + rhyme_lyrics[index : ]
+
+print(rhyme_lyrics)
